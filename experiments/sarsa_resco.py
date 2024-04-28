@@ -35,23 +35,24 @@ def run(use_gui=False, episodes=50):
     }
 
     for ep in range(1, episodes + 1):
+        print('episode reset - episode',ep)
         obs = env.reset()
         done = {agent: False for agent in env.agents}
 
         if fixed_tl:
-            while not done["__all__"]:
+            while not terminated or truncated:
                 _, _, done, _ = env.step(None)
         else:
-            while not done[env.agents[0]]:
-                actions = {ts_id: agents[ts_id].act(obs[ts_id]) for ts_id in obs.keys()}
+            while len(env.agents):
+                actions = {ts_id: agents[ts_id].act(obs[0][ts_id]) for ts_id in obs[0].keys()}
 
-                next_obs, r, done, _ = env.step(actions=actions)
-
+                next_obs, r, terminated, truncated, info = env.step(actions=actions)
                 for ts_id in next_obs.keys():
                     agents[ts_id].learn(
-                        state=obs[ts_id], action=actions[ts_id], reward=r[ts_id], next_state=next_obs[ts_id], done=done[ts_id]
+                        state=obs[0][ts_id], action=actions[ts_id], reward=r[ts_id], next_state=next_obs[ts_id], done=done[ts_id]
                     )
-                    obs[ts_id] = next_obs[ts_id]
+                    obs[0][ts_id] = next_obs[ts_id]
+
 
     env.close()
 
